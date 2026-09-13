@@ -1,0 +1,84 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  /* Primary Brand Colors */
+  --color-leaf: #678A48;
+  --color-leaf-dark: #55723B;
+  --color-blue: #38588C;
+  --color-blue-dark: #2A436C;
+  --color-yellow: #CFB850;
+  --color-orange: #D88B33;
+  --color-orange-dark: #B87223;
+
+  /* Secondary Brand Colors */
+  --color-purple: #8F6BD4;
+  --color-berry: #A13F44;
+  --color-soft-green: #9FC87B;
+  --color-soft-pink: #D97B80;
+  --color-baby-blue: #B4CEF7;
+  --color-lavender: #B4A0E8;
+  --color-soft-yellow: #E9DCA0;
+  --color-peach: #F0B76A;
+
+  /* Warm Educational Neutrals */
+  --color-cream: #FCFAF6;
+  --color-cream-alt: #F7F4EC;
+  --color-dark: #1E293B;
+  --color-dark-muted: #4B5563;
+  --color-border: #EBE5D8;
+}
+
+@layer base {
+  body {
+    background-color: var(--color-cream);
+    color: var(--color-dark);
+    font-family: 'Nunito', sans-serif;
+    overflow-x: hidden;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    font-family: 'Baloo 2', cursive, sans-serif;
+    color: var(--color-blue);
+    line-height: 1.25;
+  }
+
+  /* Accessible focus indicators */
+  :focus-visible {
+    outline: 2px solid var(--color-leaf);
+    outline-offset: 3px;
+  }
+}
+
+/* Reduced motion preference */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* Subtle organic blob generator and playful accents */
+.badge-pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.35rem 0.9rem;
+  border-radius: 9999px;
+  font-family: 'Fredoka', cursive, sans-serif;
+  font-size: 0.875rem;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+}
+
+/* Custom details accordion animation */
+details > summary {
+  list-style: none;
+}
+details > summary::-webkit-details-marker {
+  display: none;
+}
