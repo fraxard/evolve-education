@@ -51,6 +51,20 @@ export default {
         'soft': '0 4px 20px -2px rgba(56, 88, 140, 0.08), 0 2px 6px -1px rgba(56, 88, 140, 0.04)',
         'card': '0 8px 30px -4px rgba(56, 88, 140, 0.08), 0 4px 10px -2px rgba(56, 88, 140, 0.03)',
         'hover': '0 14px 36px -6px rgba(56, 88, 140, 0.14), 0 6px 14px -3px rgba(56, 88, 140, 0.06)',
+      },
+      keyframes: {
+        fadeIn: {
+          '0%': { opacity: '0' },
+          '100%': { opacity: '1' },
+        },
+        scaleUp: {
+          '0%': { opacity: '0', transform: 'scale(0.95)' },
+          '100%': { opacity: '1', transform: 'scale(1)' },
+        },
+      },
+      animation: {
+        'fade-in': 'fadeIn 0.2s ease-out forwards',
+        'scale-up': 'scaleUp 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards',
       }
     },
   },

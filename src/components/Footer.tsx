@@ -2,7 +2,11 @@ import React from 'react';
 import { siteContent } from '../data/content';
 import { ArrowUp } from 'lucide-react';
 
-export const Footer: React.FC = () => {
+export interface FooterProps {
+  onAboutClick?: () => void;
+}
+
+export const Footer: React.FC<FooterProps> = ({ onAboutClick }) => {
   const { footer, brand } = siteContent;
 
   const scrollToTop = () => {
@@ -81,7 +85,11 @@ export const Footer: React.FC = () => {
                     href={link.href}
                     onClick={(e) => {
                       e.preventDefault();
-                      handleNavClick(link.href);
+                      if (link.label.toLowerCase().includes('about') && onAboutClick) {
+                        onAboutClick();
+                      } else {
+                        handleNavClick(link.href);
+                      }
                     }}
                     className="text-brand-dark-muted hover:text-brand-leaf transition-colors inline-block"
                   >

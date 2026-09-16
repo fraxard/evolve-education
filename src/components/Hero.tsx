@@ -1,5 +1,7 @@
 import React from 'react';
+import { Link } from 'react-router-dom';
 import { siteContent } from '../data/content';
+import { ROUTES } from '../routes/paths';
 import { ArrowRight, BookOpen, CheckCircle2 } from 'lucide-react';
 import { StarDoodle, DottedTrail } from './DecorativeShapes';
 
@@ -80,24 +82,25 @@ export const Hero: React.FC<{ onExploreAbacus?: () => void }> = ({ onExploreAbac
               {hero.supportingCopy}
             </p>
 
-            {/* CTA Group */}
+            {/* CTA Group: Prospective (Enquire Now) + Existing Users (Sign In) */}
             <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-4 w-full sm:w-auto mb-10">
+              {/* Primary Conversion CTA for Prospective Students & Parents */}
               <button
                 type="button"
-                onClick={() => scrollToSection(hero.primaryCta.href)}
-                className="inline-flex items-center justify-center gap-2.5 px-7 py-3.5 bg-brand-leaf hover:bg-brand-leaf-dark text-white font-display font-bold text-lg rounded-full shadow-card hover:shadow-hover transition-all duration-200 hover:-translate-y-0.5 active:translate-y-0"
+                onClick={() => scrollToSection('#contact')}
+                className="inline-flex items-center justify-center gap-2.5 px-7 py-3.5 bg-brand-leaf hover:bg-brand-leaf-dark text-white font-display font-bold text-base sm:text-lg rounded-full shadow-card hover:shadow-hover transition-all duration-200 hover:-translate-y-0.5 active:translate-y-0"
               >
-                <span>{hero.primaryCta.label}</span>
+                <span>Enquire Now</span>
                 <ArrowRight className="w-5 h-5" />
               </button>
 
-              <button
-                type="button"
-                onClick={() => scrollToSection(hero.secondaryCta.href)}
-                className="inline-flex items-center justify-center gap-2 px-6 py-3.5 bg-white hover:bg-brand-cream-alt text-brand-blue border-2 border-brand-border hover:border-brand-yellow font-display font-bold text-lg rounded-full shadow-xs hover:shadow transition-all duration-200"
+              {/* Secondary CTA for Existing Students & Teachers */}
+              <Link
+                to={ROUTES.AUTH.SIGN_IN}
+                className="inline-flex items-center justify-center gap-2 px-6 py-3.5 bg-white hover:bg-brand-cream-alt text-brand-blue border-2 border-brand-border hover:border-brand-yellow font-display font-bold text-base sm:text-lg rounded-full shadow-xs hover:shadow transition-all duration-200"
               >
-                <span>{hero.secondaryCta.label}</span>
-              </button>
+                <span>Sign In</span>
+              </Link>
             </div>
 
             {/* Trust highlights */}

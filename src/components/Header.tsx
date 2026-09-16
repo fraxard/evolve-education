@@ -1,8 +1,14 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { Link } from 'react-router-dom';
 import { siteContent, NavItem } from '../data/content';
+import { ROUTES } from '../routes/paths';
 import { Menu, X, ArrowRight, ChevronDown } from 'lucide-react';
 
-export const Header: React.FC = () => {
+export interface HeaderProps {
+  onAboutClick?: () => void;
+}
+
+export const Header: React.FC<HeaderProps> = ({ onAboutClick }) => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
   const [isProgramsDropdownOpen, setIsProgramsDropdownOpen] = useState(false);
@@ -96,6 +102,21 @@ export const Header: React.FC = () => {
           {/* Desktop Navigation */}
           <nav className="hidden lg:flex items-center gap-1 xl:gap-2" aria-label="Main Navigation">
             {siteContent.navigation.map((item: NavItem) => {
+              if (item.label === 'About') {
+                return (
+                  <button
+                    key={item.label}
+                    type="button"
+                    onClick={() => {
+                      if (onAboutClick) onAboutClick();
+                    }}
+                    className="px-3 py-1.5 text-sm font-semibold text-brand-dark-muted hover:text-brand-blue hover:bg-brand-cream-alt/70 rounded-lg transition-colors font-body focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-leaf"
+                  >
+                    {item.label}
+                  </button>
+                );
+              }
+
               if (item.children) {
                 return (
                   <div
@@ -175,19 +196,14 @@ export const Header: React.FC = () => {
             })}
           </nav>
 
-          {/* Desktop Right CTA */}
-          <div className="hidden lg:flex items-center gap-3">
-            <a
-              href="#contact"
-              onClick={(e) => {
-                e.preventDefault();
-                handleNavClick('#contact');
-              }}
-              className="inline-flex items-center gap-2 px-5 py-2.5 bg-brand-leaf hover:bg-brand-leaf-dark text-white text-sm font-display font-bold tracking-wide rounded-full shadow-sm hover:shadow transition-all duration-200 hover:-translate-y-0.5 active:translate-y-0"
+          {/* Desktop Right Account Action: Sign In */}
+          <div className="hidden lg:flex items-center">
+            <Link
+              to={ROUTES.AUTH.SIGN_IN}
+              className="inline-flex items-center justify-center px-4 py-1.5 text-sm font-display font-bold text-brand-blue hover:text-brand-leaf bg-white hover:bg-brand-cream-alt border border-brand-border hover:border-brand-yellow rounded-full shadow-xs transition-all duration-200"
             >
-              <span>Enquire Now</span>
-              <ArrowRight className="w-4 h-4" />
-            </a>
+              Sign In
+            </Link>
           </div>
 
           {/* Mobile Hamburger Button */}
@@ -260,16 +276,16 @@ export const Header: React.FC = () => {
                 Home
               </a>
 
-              <a
-                href="#why-us"
-                onClick={(e) => {
-                  e.preventDefault();
-                  handleNavClick('#why-us');
+              <button
+                type="button"
+                onClick={() => {
+                  setIsMobileMenuOpen(false);
+                  if (onAboutClick) onAboutClick();
                 }}
-                className="px-4 py-3 text-base font-semibold text-brand-blue hover:text-brand-leaf hover:bg-brand-cream-alt/70 rounded-xl transition-colors"
+                className="w-full text-left px-4 py-3 text-base font-semibold text-brand-blue hover:text-brand-leaf hover:bg-brand-cream-alt/70 rounded-xl transition-colors"
               >
                 About Us
-              </a>
+              </button>
 
               {/* Mobile Programs Submenu */}
               <div>
@@ -368,24 +384,21 @@ export const Header: React.FC = () => {
               >
                 Contact Details
               </a>
+
             </nav>
           </div>
 
-          {/* Drawer Bottom CTA */}
+          {/* Drawer Bottom Portal Action */}
           <div className="p-5 border-t border-brand-border/60 bg-brand-cream/50">
-            <a
-              href="#contact"
-              onClick={(e) => {
-                e.preventDefault();
-                handleNavClick('#contact');
-              }}
-              className="w-full flex items-center justify-center gap-2 py-3.5 px-6 bg-brand-leaf hover:bg-brand-leaf-dark text-white font-display font-bold text-base rounded-full shadow-md transition-colors"
+            <Link
+              to={ROUTES.AUTH.SIGN_IN}
+              onClick={() => setIsMobileMenuOpen(false)}
+              className="w-full flex items-center justify-center gap-2 py-3 px-6 bg-white hover:bg-brand-cream-alt text-brand-blue border-2 border-brand-border hover:border-brand-yellow font-display font-bold text-base rounded-full shadow-xs transition-colors"
             >
-              <span>Enquire Now</span>
-              <ArrowRight className="w-4 h-4" />
-            </a>
+              <span>Sign In</span>
+            </Link>
             <p className="mt-3 text-center text-xs text-brand-dark-muted font-body">
-              Small Steps. Brighter Futures.
+              {siteContent.brand.tagline}
             </p>
           </div>
         </div>
