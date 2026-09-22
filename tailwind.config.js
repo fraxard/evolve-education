@@ -65,6 +65,13 @@ export default {
       animation: {
         'fade-in': 'fadeIn 0.2s ease-out forwards',
         'scale-up': 'scaleUp 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards',
+      },
+      zIndex: {
+        '60': '60',
+        '70': '70',
+        '80': '80',
+        '90': '90',
+        '100': '100',
       }
     },
   },

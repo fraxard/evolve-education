@@ -101,15 +101,22 @@ export const SettingsPage: React.FC = () => {
         </div>
 
         {/* Invariant Card */}
-        <div className="md:col-span-2 bg-slate-900 text-slate-200 p-4 rounded-lg shadow-xs space-y-2">
+        <div className="md:col-span-2 bg-slate-900 text-slate-200 p-4 rounded-lg shadow-xs space-y-3">
           <div className="flex items-center gap-2 text-emerald-400 font-semibold text-xs">
             <ShieldCheck className="w-4 h-4" />
-            <span>Institutional Transactional Invariant</span>
+            <span>Institutional Transactional Invariants & State Machine</span>
           </div>
-          <p className="text-xs text-slate-300 leading-relaxed">
-            Every student account in state <code className="bg-slate-800 px-1 py-0.5 rounded text-emerald-300 font-mono">active</code> is guaranteed to have at least one active enrollment record.
-            This invariant is enforced at the database transaction layer using row-level concurrency locks (<code className="bg-slate-800 px-1 py-0.5 rounded text-slate-200 font-mono">SELECT ... FOR UPDATE</code>) on both the candidate application and the selected cohort batch to prevent race-condition overbooking.
-          </p>
+          <div className="space-y-2 text-xs text-slate-300 leading-relaxed">
+            <p>
+              • <strong className="text-white">Active Enrollment Guarantee:</strong> Every student account in state <code className="bg-slate-800 px-1 py-0.5 rounded text-emerald-300 font-mono">active</code> is guaranteed to have at least one active enrollment record. This invariant is enforced at the database transaction layer using row-level concurrency locks (<code className="bg-slate-800 px-1 py-0.5 rounded text-slate-200 font-mono">SELECT ... FOR UPDATE</code>) on both the candidate application and the target cohort batch.
+            </p>
+            <p>
+              • <strong className="text-white">Cohort Capacity & Overbooking Prevention:</strong> Cohort capacity cannot be altered below currently active enrolled students, and candidate approval or student transfer operations strictly fail if a cohort reaches max capacity.
+            </p>
+            <p>
+              • <strong className="text-white">Audit Trail & Mobility History:</strong> Student cohort transfers and lifecycle state transitions (<code className="bg-slate-800 px-1 py-0.5 rounded text-amber-300 font-mono">suspend</code>, <code className="bg-slate-800 px-1 py-0.5 rounded text-rose-300 font-mono">withdraw</code>, <code className="bg-slate-800 px-1 py-0.5 rounded text-purple-300 font-mono">graduate</code>, <code className="bg-slate-800 px-1 py-0.5 rounded text-emerald-300 font-mono">activate</code>) atomically update platform accounts, close active enrollments with formal historical status markers (<code className="bg-slate-800 px-1 py-0.5 rounded text-slate-200 font-mono">transferred</code>, <code className="bg-slate-800 px-1 py-0.5 rounded text-slate-200 font-mono">withdrawn</code>, <code className="bg-slate-800 px-1 py-0.5 rounded text-slate-200 font-mono">completed</code>), and append immutable records to <code className="bg-slate-800 px-1 py-0.5 rounded text-cyan-300 font-mono">audit_logs</code>.
+            </p>
+          </div>
         </div>
 
         {/* Active Operator */}

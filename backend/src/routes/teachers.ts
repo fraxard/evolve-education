@@ -95,7 +95,7 @@ teachersRouter.post(
           [adminId, teacherId, JSON.stringify({ email: data.email, fullName: data.fullName }), req.ip || null]
         );
 
-        return { teacherId, userId, fullName: data.fullName, email: data.email };
+        return { id: teacherId, teacherId, userId, fullName: data.fullName, email: data.email };
       });
 
       res.status(201).json({ message: 'Teacher account created successfully.', teacher: result });
@@ -114,14 +114,14 @@ teachersRouter.patch(
   async (req: AuthenticatedRequest, res: Response): Promise<void> => {
     try {
       const { id } = req.params;
-      const { status, phone, qualification, specialization } = req.body;
+      const { fullName, status, phone, qualification, specialization } = req.body;
 
       if (status && !['active', 'inactive'].includes(status)) {
         res.status(400).json({ error: 'Status must be active or inactive.' });
         return;
       }
 
-      await withTransaction(async (client) => {
+      const result = await withTransaction(async (client) => {
         const teacherRes = await client.query('SELECT user_id FROM teachers WHERE id = $1', [id]);
         if (teacherRes.rows.length === 0) {
           throw { status: 404, message: 'Teacher not found.' };
@@ -130,13 +130,14 @@ teachersRouter.patch(
 
         await client.query(
           `UPDATE teachers 
-           SET status = COALESCE($1, status),
-               phone = COALESCE($2, phone),
-               qualification = COALESCE($3, qualification),
-               specialization = COALESCE($4, specialization),
+           SET full_name = COALESCE($1, full_name),
+               status = COALESCE($2, status),
+               phone = COALESCE($3, phone),
+               qualification = COALESCE($4, qualification),
+               specialization = COALESCE($5, specialization),
                updated_at = NOW()
-           WHERE id = $5`,
-          [status || null, phone || null, qualification || null, specialization || null, id]
+           WHERE id = $6`,
+          [fullName || null, status || null, phone || null, qualification || null, specialization || null, id]
         );
 
         if (status) {
@@ -149,11 +150,14 @@ teachersRouter.patch(
         await client.query(
           `INSERT INTO audit_logs (actor_id, actor_role, action, target_entity, target_id, details, ip_address)
            VALUES ($1, 'admin', 'TEACHER_UPDATED', 'teachers', $2, $3, $4);`,
-          [req.currentUser!.id, id, JSON.stringify({ status, phone, qualification, specialization }), req.ip || null]
+          [req.currentUser!.id, id, JSON.stringify({ fullName, status, phone, qualification, specialization }), req.ip || null]
         );
+
+        const updated = await client.query('SELECT * FROM teachers WHERE id = $1', [id]);
+        return updated.rows[0];
       });
 
-      res.json({ message: 'Teacher updated successfully.' });
+      res.json({ message: 'Teacher updated successfully.', teacher: result });
     } catch (err: any) {
       if (err.status) {
         res.status(err.status).json({ error: err.message });

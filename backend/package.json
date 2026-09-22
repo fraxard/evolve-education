@@ -10,7 +10,9 @@
     "db:migrate": "tsx src/db/migrate.ts",
     "db:seed": "tsx src/db/seed.ts",
     "admin:bootstrap": "tsx src/scripts/bootstrap-admin.ts",
-    "test:lifecycle": "tsx src/scripts/test-lifecycle.ts"
+    "test:lifecycle": "tsx src/scripts/test-lifecycle.ts",
+    "test:student-foundation": "tsx src/scripts/test-student-foundation.ts",
+    "test:student-dashboard": "tsx src/scripts/test-student-dashboard.ts"
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",

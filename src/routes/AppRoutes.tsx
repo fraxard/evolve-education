@@ -16,6 +16,15 @@ import { ProgramsPage } from '../pages/admin/ProgramsPage';
 import { BatchesPage } from '../pages/admin/BatchesPage';
 import { AuditLogsPage } from '../pages/admin/AuditLogsPage';
 import { SettingsPage } from '../pages/admin/SettingsPage';
+import { StudentLayout } from '../pages/student/StudentLayout';
+import { StudentDashboardPage } from '../pages/student/DashboardPage';
+import { MyProgramPage } from '../pages/student/MyProgramPage';
+import { AttendancePage } from '../pages/student/AttendancePage';
+import { AssessmentsPage } from '../pages/student/AssessmentsPage';
+import { ProgressPage } from '../pages/student/ProgressPage';
+import { FeedbackPage } from '../pages/student/FeedbackPage';
+import { DocumentsPage } from '../pages/student/DocumentsPage';
+import { StudentProfilePage } from '../pages/student/ProfilePage';
 
 /**
  * Public domain redirect to Admin Subdomain for /admin/* paths
@@ -97,19 +106,28 @@ export const AppRoutes: React.FC = () => {
       {/* Unauthenticated public /dashboard redirect to public sign-in */}
       <Route path="/dashboard" element={<Navigate to={ROUTES.AUTH.SIGN_IN} replace />} />
 
-      {/* Authenticated Student & Teacher Portals (Reserved for Phase 3 via lightweight boundary) */}
+      {/* Authenticated Student Portal (Phase 2B) */}
       <Route
-        path={`${ROUTES.PORTAL.STUDENT}/*`}
+        path={ROUTES.PORTAL.STUDENT}
         element={
           <ProtectedRoute allowedRoles={['student']}>
-            <RouteBoundary
-              title="Student Portal"
-              category="portal"
-              path={ROUTES.PORTAL.STUDENT}
-            />
+            <StudentLayout />
           </ProtectedRoute>
         }
-      />
+      >
+        <Route index element={<Navigate to={ROUTES.STUDENT.DASHBOARD} replace />} />
+        <Route path="dashboard" element={<StudentDashboardPage />} />
+        <Route path="program" element={<MyProgramPage />} />
+        <Route path="attendance" element={<AttendancePage />} />
+        <Route path="assessments" element={<AssessmentsPage />} />
+        <Route path="progress" element={<ProgressPage />} />
+        <Route path="feedback" element={<FeedbackPage />} />
+        <Route path="documents" element={<DocumentsPage />} />
+        <Route path="profile" element={<StudentProfilePage />} />
+        <Route path="*" element={<Navigate to={ROUTES.STUDENT.DASHBOARD} replace />} />
+      </Route>
+
+      {/* Authenticated Teacher Portal (Reserved for Future Phase via lightweight boundary) */}
       <Route
         path={`${ROUTES.PORTAL.TEACHER}/*`}
         element={

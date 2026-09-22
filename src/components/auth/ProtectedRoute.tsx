@@ -36,15 +36,29 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
 
   // Role validation failure:
   if (allowedRoles && !allowedRoles.includes(user.role)) {
+    const isStudentPortal = allowedRoles.length === 1 && allowedRoles[0] === 'student';
+    const isTeacherPortal = allowedRoles.length === 1 && allowedRoles[0] === 'teacher';
+    const title = isStudentPortal
+      ? 'Student Access Restricted'
+      : isTeacherPortal
+      ? 'Teacher Access Restricted'
+      : 'Administrative Access Restricted';
+
+    const areaDescription = isStudentPortal
+      ? 'The requested portal is restricted to active enrolled students.'
+      : isTeacherPortal
+      ? 'The requested portal is restricted to active faculty members.'
+      : 'The requested control panel is restricted to authorized administrators.';
+
     return (
       <div className="min-h-screen flex items-center justify-center p-4 bg-slate-900 text-slate-100 font-body">
         <div className="max-w-md w-full p-6 bg-slate-800 border border-slate-700 rounded-xl shadow-xl text-center">
           <div className="w-10 h-10 rounded-lg bg-rose-950 border border-rose-800 text-rose-400 flex items-center justify-center mx-auto mb-3">
             <ShieldAlert className="w-5 h-5" />
           </div>
-          <h2 className="text-base font-semibold text-white mb-1">Administrative Access Restricted</h2>
+          <h2 className="text-base font-semibold text-white mb-1">{title}</h2>
           <p className="text-xs text-slate-400 mb-4 leading-relaxed">
-            The requested control panel is restricted to authorized administrators. Your authenticated account (<span className="font-mono text-slate-200">{user.email}</span>) holds role <span className="font-mono font-semibold uppercase text-amber-400">{user.role}</span>.
+            {areaDescription} Your authenticated account (<span className="font-mono text-slate-200">{user.email}</span>) holds role <span className="font-mono font-semibold uppercase text-amber-400">{user.role}</span>.
           </p>
 
           <div className="flex flex-col sm:flex-row items-center justify-center gap-2 pt-2 border-t border-slate-700/80">

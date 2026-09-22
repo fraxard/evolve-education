@@ -399,8 +399,8 @@ export const ApplicationsPage: React.FC = () => {
       </div>
 
       {/* Detail Modal */}
-      {selectedApp && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs overflow-y-auto">
+      {selectedApp && !isWizardOpen && !isRejectModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm overflow-y-auto">
           <div className="bg-white rounded-xl shadow-xl border border-slate-300 max-w-xl w-full max-h-[90vh] flex flex-col my-8">
             <div className="px-5 py-3.5 border-b border-slate-200 flex items-center justify-between bg-slate-50 rounded-t-xl">
               <div>
@@ -437,7 +437,7 @@ export const ApplicationsPage: React.FC = () => {
                 </div>
                 <div>
                   <span className="text-slate-400 block text-[10px] uppercase font-mono">Account Email</span>
-                  <span className="font-mono text-slate-800">{selectedApp.account_email}</span>
+                  <span className="font-mono text-slate-800 break-all">{selectedApp.account_email}</span>
                 </div>
                 <div>
                   <span className="text-slate-400 block text-[10px] uppercase font-mono">Guardian</span>
@@ -493,7 +493,7 @@ export const ApplicationsPage: React.FC = () => {
 
       {/* Reject Modal */}
       {isRejectModalOpen && selectedApp && (
-        <div className="fixed inset-0 z-60 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs">
+        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
           <div className="bg-white rounded-xl shadow-xl border border-slate-300 max-w-md w-full p-5">
             <h3 className="text-sm font-semibold text-slate-900 mb-1 flex items-center gap-1.5">
               <AlertTriangle className="w-4 h-4 text-rose-600" />
@@ -543,7 +543,7 @@ export const ApplicationsPage: React.FC = () => {
 
       {/* Activation Wizard */}
       {isWizardOpen && selectedApp && (
-        <div className="fixed inset-0 z-60 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs overflow-y-auto">
+        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm overflow-y-auto">
           <div className="bg-white rounded-xl shadow-xl border border-slate-300 max-w-xl w-full flex flex-col my-8">
             <div className="px-5 py-3.5 border-b border-slate-200 flex items-center justify-between bg-slate-50 rounded-t-xl">
               <div>

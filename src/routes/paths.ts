@@ -101,7 +101,20 @@ export const ROUTES = {
   // Admin mapping reference
   ADMIN: ADMIN_ROUTES,
 
-  // Authenticated Educational Portal Area (Future Phase 3)
+  // Authenticated Educational Student Portal (Phase 2B)
+  STUDENT: {
+    ROOT: '/portal/student',
+    DASHBOARD: '/portal/student/dashboard',
+    PROGRAM: '/portal/student/program',
+    ATTENDANCE: '/portal/student/attendance',
+    ASSESSMENTS: '/portal/student/assessments',
+    PROGRESS: '/portal/student/progress',
+    FEEDBACK: '/portal/student/feedback',
+    DOCUMENTS: '/portal/student/documents',
+    PROFILE: '/portal/student/profile',
+  },
+
+  // Authenticated Educational Portal Area
   PORTAL: {
     ROOT: '/portal',
     STUDENT: '/portal/student',

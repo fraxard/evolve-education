@@ -24,17 +24,29 @@ export const AuditLogsPage: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [expandedLogId, setExpandedLogId] = useState<string | null>(null);
+  const [selectedAction, setSelectedAction] = useState<string>('all');
+  const [error, setError] = useState<string | null>(null);
 
   const fetchLogs = async () => {
     setLoading(true);
+    setError(null);
     try {
-      const res = await fetch('/api/audit-logs', { credentials: 'include' });
+      const params = new URLSearchParams();
+      if (selectedAction && selectedAction !== 'all') {
+        params.append('action', selectedAction);
+      }
+      params.append('limit', '100');
+
+      const res = await fetch(`/api/audit-logs?${params.toString()}`, { credentials: 'include' });
       if (res.ok) {
         const data = await res.json();
-        setLogs(data.logs || []);
+        setLogs(data.auditLogs || data.logs || []);
+      } else {
+        setError(`Failed to fetch audit logs (HTTP ${res.status}).`);
       }
     } catch (err) {
       console.error('Failed to fetch audit logs', err);
+      setError('Connection error loading audit trail.');
     } finally {
       setLoading(false);
     }
@@ -42,7 +54,7 @@ export const AuditLogsPage: React.FC = () => {
 
   useEffect(() => {
     fetchLogs();
-  }, []);
+  }, [selectedAction]);
 
   const toggleExpand = (id: string) => {
     setExpandedLogId(expandedLogId === id ? null : id);
@@ -78,21 +90,54 @@ export const AuditLogsPage: React.FC = () => {
         </button>
       </div>
 
-      {/* Search Bar */}
-      <div className="bg-white p-3 rounded-lg border border-slate-200 shadow-xs flex items-center justify-between">
-        <div className="relative w-full max-w-sm">
-          <Search className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-1/2 -translate-y-1/2" />
-          <input
-            type="text"
-            placeholder="Search action, entity, actor email..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-8 pr-3 py-1 bg-slate-50 border border-slate-200 rounded text-xs text-slate-800 placeholder-slate-400 focus:bg-white focus:outline-none focus:border-slate-400"
-          />
+      {error && (
+        <div className="p-3 bg-rose-50 border border-rose-200 text-rose-700 text-xs rounded-lg">
+          {error}
+        </div>
+      )}
+
+      {/* Filter and Search Bar */}
+      <div className="bg-white p-3 rounded-lg border border-slate-200 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div className="flex items-center gap-2">
+          <label className="text-[11px] font-mono text-slate-500 uppercase">Action:</label>
+          <select
+            value={selectedAction}
+            onChange={(e) => setSelectedAction(e.target.value)}
+            className="px-2.5 py-1 bg-slate-50 border border-slate-200 rounded text-xs font-mono text-slate-800 focus:bg-white focus:outline-none focus:border-slate-400"
+          >
+            <option value="all">ALL ACTIONS</option>
+            <option value="APPLICATION_SUBMITTED">APPLICATION_SUBMITTED</option>
+            <option value="APPLICATION_REJECTED">APPLICATION_REJECTED</option>
+            <option value="STUDENT_ACTIVATED">STUDENT_ACTIVATED</option>
+            <option value="STUDENT_TRANSFERRED">STUDENT_TRANSFERRED</option>
+            <option value="STUDENT_SUSPENDED">STUDENT_SUSPENDED</option>
+            <option value="STUDENT_DEACTIVATED">STUDENT_DEACTIVATED</option>
+            <option value="STUDENT_GRADUATED">STUDENT_GRADUATED</option>
+            <option value="STUDENT_REACTIVATED">STUDENT_REACTIVATED</option>
+            <option value="TEACHER_CREATED">TEACHER_CREATED</option>
+            <option value="TEACHER_UPDATED">TEACHER_UPDATED</option>
+            <option value="PROGRAM_CREATED">PROGRAM_CREATED</option>
+            <option value="PROGRAM_UPDATED">PROGRAM_UPDATED</option>
+            <option value="BATCH_CREATED">BATCH_CREATED</option>
+            <option value="BATCH_UPDATED">BATCH_UPDATED</option>
+          </select>
         </div>
 
-        <div className="text-[11px] font-mono text-slate-500">
-          Recorded Events: <span className="font-semibold text-slate-800">{filteredLogs.length}</span>
+        <div className="flex items-center gap-3">
+          <div className="relative w-full sm:w-64">
+            <Search className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-1/2 -translate-y-1/2" />
+            <input
+              type="text"
+              placeholder="Search entity, target ID, actor..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full pl-8 pr-3 py-1 bg-slate-50 border border-slate-200 rounded text-xs text-slate-800 placeholder-slate-400 focus:bg-white focus:outline-none focus:border-slate-400"
+            />
+          </div>
+
+          <div className="text-[11px] font-mono text-slate-500 whitespace-nowrap">
+            Events: <span className="font-semibold text-slate-800">{filteredLogs.length}</span>
+          </div>
         </div>
       </div>
 

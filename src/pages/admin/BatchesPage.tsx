@@ -4,6 +4,8 @@ import {
   Search,
   RefreshCw,
   X,
+  Edit2,
+  CheckCircle2,
 } from 'lucide-react';
 
 interface Batch {
@@ -14,6 +16,7 @@ interface Batch {
   level?: string | null;
   schedule?: string | null;
   start_date: string;
+  end_date?: string | null;
   capacity: number;
   enrolled_student_count: number;
   is_active: boolean;
@@ -35,6 +38,7 @@ export const BatchesPage: React.FC = () => {
   const [batches, setBatches] = useState<Batch[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
   // Add Batch Modal
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
@@ -50,6 +54,19 @@ export const BatchesPage: React.FC = () => {
   const [startDate, setStartDate] = useState(new Date().toISOString().split('T')[0]);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Edit Batch Modal
+  const [editingBatch, setEditingBatch] = useState<Batch | null>(null);
+  const [editName, setEditName] = useState('');
+  const [editLevel, setEditLevel] = useState('');
+  const [editSchedule, setEditSchedule] = useState('');
+  const [editStartDate, setEditStartDate] = useState('');
+  const [editEndDate, setEditEndDate] = useState('');
+  const [editCapacity, setEditCapacity] = useState(15);
+  const [editTeacherId, setEditTeacherId] = useState('');
+  const [editIsActive, setEditIsActive] = useState(true);
+  const [editSubmitting, setEditSubmitting] = useState(false);
+  const [editError, setEditError] = useState<string | null>(null);
 
   const fetchBatches = async () => {
     setLoading(true);
@@ -144,17 +161,108 @@ export const BatchesPage: React.FC = () => {
 
   const toggleStatus = async (batch: Batch) => {
     try {
+      const nextActive = !batch.is_active;
       const res = await fetch(`/api/batches/${batch.id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
-        body: JSON.stringify({ isActive: !batch.is_active }),
+        body: JSON.stringify({ isActive: nextActive }),
       });
       if (res.ok) {
+        setSuccessMessage(`Cohort "${batch.name}" marked ${nextActive ? 'active' : 'inactive'}.`);
+        setTimeout(() => setSuccessMessage(null), 3000);
         fetchBatches();
       }
     } catch (err) {
       console.error('Failed to toggle batch status', err);
+    }
+  };
+
+  const loadPrerequisites = async () => {
+    if (programs.length === 0 || teachers.length === 0) {
+      try {
+        const [pRes, tRes] = await Promise.all([
+          fetch('/api/programs', { credentials: 'include' }),
+          fetch('/api/teachers', { credentials: 'include' }),
+        ]);
+        if (pRes.ok) {
+          const pData = await pRes.json();
+          setPrograms((pData.programs || []).filter((p: any) => p.is_active));
+        }
+        if (tRes.ok) {
+          const tData = await tRes.json();
+          setTeachers((tData.teachers || []).filter((t: any) => t.status === 'active'));
+        }
+      } catch (err) {
+        console.error('Failed to load prerequisites', err);
+      }
+    }
+  };
+
+  const openEditModal = async (batch: Batch) => {
+    await loadPrerequisites();
+    setEditingBatch(batch);
+    setEditName(batch.name || '');
+    setEditLevel(batch.level || '');
+    setEditSchedule(batch.schedule || '');
+    setEditStartDate(batch.start_date ? batch.start_date.split('T')[0] : '');
+    setEditEndDate(batch.end_date ? batch.end_date.split('T')[0] : '');
+    setEditCapacity(batch.capacity || 15);
+    setEditTeacherId(batch.teacher_id || '');
+    setEditIsActive(batch.is_active);
+    setEditError(null);
+  };
+
+  const handleUpdateBatch = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingBatch) return;
+    if (!editName.trim()) {
+      setEditError('Batch name is required.');
+      return;
+    }
+
+    const currentEnrolled = editingBatch.enrolled_student_count || 0;
+    if (Number(editCapacity) < currentEnrolled) {
+      setEditError(
+        `Cannot set capacity to ${editCapacity}. There are currently ${currentEnrolled} active students enrolled in this cohort.`
+      );
+      return;
+    }
+
+    setEditError(null);
+    setEditSubmitting(true);
+
+    try {
+      const res = await fetch(`/api/batches/${editingBatch.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({
+          name: editName.trim(),
+          level: editLevel.trim() || undefined,
+          schedule: editSchedule.trim() || undefined,
+          startDate: editStartDate || undefined,
+          endDate: editEndDate || null,
+          capacity: Number(editCapacity),
+          teacherId: editTeacherId || null,
+          isActive: editIsActive,
+        }),
+      });
+
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.error || 'Failed to update cohort batch');
+      }
+
+      setEditingBatch(null);
+      setSuccessMessage(`Cohort "${editName.trim()}" updated successfully.`);
+      setTimeout(() => setSuccessMessage(null), 4000);
+      await fetchBatches();
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Error updating batch';
+      setEditError(msg);
+    } finally {
+      setEditSubmitting(false);
     }
   };
 
@@ -195,6 +303,13 @@ export const BatchesPage: React.FC = () => {
           </button>
         </div>
       </div>
+
+      {successMessage && (
+        <div className="p-3 bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs rounded-lg flex items-center gap-2">
+          <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+          <span>{successMessage}</span>
+        </div>
+      )}
 
       {/* Search Bar */}
       <div className="bg-white p-3 rounded-lg border border-slate-200 shadow-xs flex items-center justify-between">
@@ -243,6 +358,7 @@ export const BatchesPage: React.FC = () => {
                 {filteredBatches.map((b) => {
                   const filled = b.enrolled_student_count || 0;
                   const isFull = filled >= b.capacity;
+                  const isNearCap = !isFull && b.capacity > 0 && filled / b.capacity >= 0.85;
 
                   return (
                     <tr key={b.id} className="hover:bg-slate-50/80 transition-colors">
@@ -260,12 +376,24 @@ export const BatchesPage: React.FC = () => {
                         {b.schedule || 'TBD'}
                       </td>
                       <td className="py-2.5 px-3 font-mono text-[11px]">
-                        <span className={isFull ? 'text-rose-600 font-semibold' : 'text-slate-800 font-medium'}>
-                          {filled} / {b.capacity}
-                        </span>
-                        <span className="text-[10px] text-slate-400 ml-1">
-                          ({isFull ? 'Full' : `${b.capacity - filled} open`})
-                        </span>
+                        <div className="flex items-center gap-1.5">
+                          <span className={isFull ? 'text-rose-600 font-semibold' : 'text-slate-800 font-medium'}>
+                            {filled} / {b.capacity}
+                          </span>
+                          {isFull ? (
+                            <span className="px-1.5 py-0.5 rounded text-[9px] font-semibold uppercase bg-rose-100 text-rose-800 font-mono">
+                              Full
+                            </span>
+                          ) : isNearCap ? (
+                            <span className="px-1.5 py-0.5 rounded text-[9px] font-semibold uppercase bg-amber-100 text-amber-800 font-mono">
+                              Near Cap
+                            </span>
+                          ) : (
+                            <span className="text-[10px] text-slate-400">
+                              ({b.capacity - filled} open)
+                            </span>
+                          )}
+                        </div>
                       </td>
                       <td className="py-2.5 px-3">
                         <span
@@ -278,7 +406,14 @@ export const BatchesPage: React.FC = () => {
                           {b.is_active ? 'Active' : 'Inactive'}
                         </span>
                       </td>
-                      <td className="py-2.5 px-3.5 text-right">
+                      <td className="py-2.5 px-3.5 text-right space-x-2">
+                        <button
+                          onClick={() => openEditModal(b)}
+                          className="text-[11px] font-medium text-slate-700 hover:text-slate-900 inline-flex items-center gap-1 px-2 py-0.5 rounded hover:bg-slate-200 transition-colors"
+                        >
+                          <Edit2 className="w-3 h-3" />
+                          <span>Edit</span>
+                        </button>
                         <button
                           onClick={() => toggleStatus(b)}
                           className={`text-[11px] font-medium underline ${
@@ -301,7 +436,7 @@ export const BatchesPage: React.FC = () => {
 
       {/* Add Modal */}
       {isAddModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs overflow-y-auto">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm overflow-y-auto">
           <div className="bg-white rounded-xl shadow-xl border border-slate-300 max-w-md w-full p-5 my-8">
             <div className="flex items-center justify-between pb-3 border-b border-slate-200">
               <h3 className="text-sm font-semibold text-slate-900">
@@ -427,6 +562,168 @@ export const BatchesPage: React.FC = () => {
                   className="px-3.5 py-1.5 bg-slate-900 hover:bg-slate-800 text-white rounded text-xs font-semibold shadow-xs"
                 >
                   {submitting ? 'Creating...' : 'Create Batch'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Batch Modal */}
+      {editingBatch && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm overflow-y-auto">
+          <div className="bg-white rounded-xl shadow-xl border border-slate-300 max-w-md w-full p-5 my-8">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-200">
+              <h3 className="text-sm font-semibold text-slate-900">
+                Edit Cohort: {editingBatch.name}
+              </h3>
+              <button
+                onClick={() => setEditingBatch(null)}
+                className="p-1 text-slate-400 hover:text-slate-600 rounded"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            {/* Current Capacity Overview */}
+            <div className="mt-3 p-2.5 bg-slate-50 border border-slate-200 rounded text-xs flex items-center justify-between">
+              <div>
+                <span className="text-[10px] uppercase font-mono text-slate-400 block">Enrolled Learners</span>
+                <span className="font-semibold text-slate-800 font-mono">
+                  {editingBatch.enrolled_student_count || 0} active students
+                </span>
+              </div>
+              <div>
+                <span className="text-[10px] uppercase font-mono text-slate-400 block">Program</span>
+                <span className="font-medium text-slate-700">{editingBatch.program_name}</span>
+              </div>
+            </div>
+
+            {editError && (
+              <div className="mt-3 p-2.5 rounded bg-rose-50 border border-rose-200 text-rose-700 text-xs">
+                {editError}
+              </div>
+            )}
+
+            <form onSubmit={handleUpdateBatch} className="space-y-3 mt-3 text-xs">
+              <div>
+                <label className="block font-medium text-slate-700 mb-1">
+                  Batch Name <span className="text-rose-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={editName}
+                  onChange={(e) => setEditName(e.target.value)}
+                  className="w-full px-3 py-1.5 bg-slate-50 border border-slate-200 rounded text-xs focus:bg-white focus:outline-none focus:border-slate-400"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <label className="block font-medium text-slate-700 mb-1">Curriculum Level</label>
+                  <input
+                    type="text"
+                    value={editLevel}
+                    onChange={(e) => setEditLevel(e.target.value)}
+                    className="w-full px-3 py-1.5 bg-slate-50 border border-slate-200 rounded text-xs focus:bg-white focus:outline-none focus:border-slate-400"
+                  />
+                </div>
+                <div>
+                  <label className="block font-medium text-slate-700 mb-1">Faculty Lead</label>
+                  <select
+                    value={editTeacherId}
+                    onChange={(e) => setEditTeacherId(e.target.value)}
+                    className="w-full px-2.5 py-1.5 bg-slate-50 border border-slate-200 rounded text-xs focus:bg-white focus:outline-none focus:border-slate-400"
+                  >
+                    <option value="">Unassigned</option>
+                    {teachers.map((t) => (
+                      <option key={t.id} value={t.id}>{t.full_name}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              <div>
+                <label className="block font-medium text-slate-700 mb-1">
+                  Meeting Schedule <span className="text-rose-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={editSchedule}
+                  onChange={(e) => setEditSchedule(e.target.value)}
+                  className="w-full px-3 py-1.5 bg-slate-50 border border-slate-200 rounded text-xs focus:bg-white focus:outline-none focus:border-slate-400"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <label className="block font-medium text-slate-700 mb-1">
+                    Seat Capacity <span className="text-rose-500">*</span>
+                  </label>
+                  <input
+                    type="number"
+                    min={editingBatch.enrolled_student_count || 1}
+                    max={100}
+                    required
+                    value={editCapacity}
+                    onChange={(e) => setEditCapacity(Number(e.target.value))}
+                    className="w-full px-3 py-1.5 bg-slate-50 border border-slate-200 rounded text-xs focus:bg-white focus:outline-none focus:border-slate-400"
+                  />
+                  <span className="text-[10px] text-slate-400 mt-0.5 block">
+                    Min: {editingBatch.enrolled_student_count || 1} (enrolled count)
+                  </span>
+                </div>
+                <div>
+                  <label className="block font-medium text-slate-700 mb-1">Cohort Status</label>
+                  <select
+                    value={editIsActive ? 'active' : 'inactive'}
+                    onChange={(e) => setEditIsActive(e.target.value === 'active')}
+                    className="w-full px-2.5 py-1.5 bg-slate-50 border border-slate-200 rounded text-xs focus:bg-white focus:outline-none focus:border-slate-400"
+                  >
+                    <option value="active">Active (Open to enrollments)</option>
+                    <option value="inactive">Inactive</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <label className="block font-medium text-slate-700 mb-1">Start Date</label>
+                  <input
+                    type="date"
+                    value={editStartDate}
+                    onChange={(e) => setEditStartDate(e.target.value)}
+                    className="w-full px-3 py-1.5 bg-slate-50 border border-slate-200 rounded text-xs focus:bg-white focus:outline-none focus:border-slate-400"
+                  />
+                </div>
+                <div>
+                  <label className="block font-medium text-slate-700 mb-1">End Date (Optional)</label>
+                  <input
+                    type="date"
+                    value={editEndDate}
+                    onChange={(e) => setEditEndDate(e.target.value)}
+                    className="w-full px-3 py-1.5 bg-slate-50 border border-slate-200 rounded text-xs focus:bg-white focus:outline-none focus:border-slate-400"
+                  />
+                </div>
+              </div>
+
+              <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-200">
+                <button
+                  type="button"
+                  onClick={() => setEditingBatch(null)}
+                  disabled={editSubmitting}
+                  className="px-3 py-1.5 border border-slate-200 text-slate-600 rounded text-xs hover:bg-slate-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={editSubmitting}
+                  className="px-3.5 py-1.5 bg-slate-900 hover:bg-slate-800 text-white rounded text-xs font-semibold shadow-xs"
+                >
+                  {editSubmitting ? 'Saving...' : 'Save Changes'}
                 </button>
               </div>
             </form>

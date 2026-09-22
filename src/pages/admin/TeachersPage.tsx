@@ -4,6 +4,8 @@ import {
   Search,
   RefreshCw,
   X,
+  Edit2,
+  CheckCircle2,
 } from 'lucide-react';
 
 interface Teacher {
@@ -24,6 +26,7 @@ export const TeachersPage: React.FC = () => {
   const [teachers, setTeachers] = useState<Teacher[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
   // Add Teacher Modal
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
@@ -35,6 +38,16 @@ export const TeachersPage: React.FC = () => {
   const [qualification, setQualification] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Edit Teacher Modal
+  const [editingTeacher, setEditingTeacher] = useState<Teacher | null>(null);
+  const [editFullName, setEditFullName] = useState('');
+  const [editPhone, setEditPhone] = useState('');
+  const [editQualification, setEditQualification] = useState('');
+  const [editSpecialization, setEditSpecialization] = useState('');
+  const [editStatus, setEditStatus] = useState('active');
+  const [editSubmitting, setEditSubmitting] = useState(false);
+  const [editError, setEditError] = useState<string | null>(null);
 
   const fetchTeachers = async () => {
     setLoading(true);
@@ -106,10 +119,65 @@ export const TeachersPage: React.FC = () => {
         body: JSON.stringify({ status: nextStatus }),
       });
       if (res.ok) {
-        fetchTeachers();
+        setSuccessMessage(`Instructor "${teacher.full_name}" marked ${nextStatus}.`);
+        setTimeout(() => setSuccessMessage(null), 3000);
       }
+      setEditingTeacher(null);
+      await fetchTeachers();
     } catch (err) {
       console.error('Failed to toggle teacher status', err);
+    }
+  };
+
+  const openEditModal = (teacher: Teacher) => {
+    setEditingTeacher(teacher);
+    setEditFullName(teacher.full_name || '');
+    setEditPhone(teacher.phone || '');
+    setEditQualification(teacher.qualification || '');
+    setEditSpecialization(teacher.specialization || '');
+    setEditStatus(teacher.status || 'active');
+    setEditError(null);
+  };
+
+  const handleUpdateTeacher = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingTeacher) return;
+    if (!editFullName.trim()) {
+      setEditError('Instructor name is required.');
+      return;
+    }
+
+    setEditError(null);
+    setEditSubmitting(true);
+
+    try {
+      const res = await fetch(`/api/teachers/${editingTeacher.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({
+          fullName: editFullName.trim(),
+          phone: editPhone.trim() || undefined,
+          qualification: editQualification.trim() || undefined,
+          specialization: editSpecialization.trim() || undefined,
+          status: editStatus,
+        }),
+      });
+
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.error || 'Failed to update teacher');
+      }
+
+      setEditingTeacher(null);
+      setSuccessMessage(`Instructor "${editFullName.trim()}" updated successfully.`);
+      setTimeout(() => setSuccessMessage(null), 4000);
+      await fetchTeachers();
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Error updating teacher';
+      setEditError(msg);
+    } finally {
+      setEditSubmitting(false);
     }
   };
 
@@ -150,6 +218,13 @@ export const TeachersPage: React.FC = () => {
           </button>
         </div>
       </div>
+
+      {successMessage && (
+        <div className="p-3 bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs rounded-lg flex items-center gap-2">
+          <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+          <span>{successMessage}</span>
+        </div>
+      )}
 
       {/* Search Bar */}
       <div className="bg-white p-3 rounded-lg border border-slate-200 shadow-xs flex items-center justify-between">
@@ -218,7 +293,14 @@ export const TeachersPage: React.FC = () => {
                         {t.status}
                       </span>
                     </td>
-                    <td className="py-2.5 px-3.5 text-right">
+                    <td className="py-2.5 px-3.5 text-right space-x-2">
+                      <button
+                        onClick={() => openEditModal(t)}
+                        className="text-[11px] font-medium text-slate-700 hover:text-slate-900 inline-flex items-center gap-1 px-2 py-0.5 rounded hover:bg-slate-200 transition-colors"
+                      >
+                        <Edit2 className="w-3 h-3" />
+                        <span>Edit</span>
+                      </button>
                       <button
                         onClick={() => toggleStatus(t)}
                         className={`text-[11px] font-medium underline ${
@@ -240,7 +322,7 @@ export const TeachersPage: React.FC = () => {
 
       {/* Add Modal */}
       {isAddModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs overflow-y-auto">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm overflow-y-auto">
           <div className="bg-white rounded-xl shadow-xl border border-slate-300 max-w-md w-full p-5 my-8">
             <div className="flex items-center justify-between pb-3 border-b border-slate-200">
               <h3 className="text-sm font-semibold text-slate-900">
@@ -354,6 +436,120 @@ export const TeachersPage: React.FC = () => {
                   className="px-3.5 py-1.5 bg-slate-900 hover:bg-slate-800 text-white rounded text-xs font-semibold shadow-xs"
                 >
                   {submitting ? 'Registering...' : 'Save Faculty'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Modal */}
+      {editingTeacher && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm overflow-y-auto">
+          <div className="bg-white rounded-xl shadow-xl border border-slate-300 max-w-md w-full p-5 my-8">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-200">
+              <h3 className="text-sm font-semibold text-slate-900">
+                Edit Faculty Profile
+              </h3>
+              <button
+                onClick={() => setEditingTeacher(null)}
+                className="p-1 text-slate-400 hover:text-slate-600 rounded"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            {editError && (
+              <div className="mt-3 p-2.5 rounded bg-rose-50 border border-rose-200 text-rose-700 text-xs">
+                {editError}
+              </div>
+            )}
+
+            <form onSubmit={handleUpdateTeacher} className="space-y-3 mt-3 text-xs">
+              <div>
+                <label className="block font-medium text-slate-700 mb-1">
+                  Full Name <span className="text-rose-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={editFullName}
+                  onChange={(e) => setEditFullName(e.target.value)}
+                  className="w-full px-3 py-1.5 bg-slate-50 border border-slate-200 rounded text-xs focus:bg-white focus:outline-none focus:border-slate-400"
+                />
+              </div>
+
+              <div>
+                <label className="block font-medium text-slate-700 mb-1">Account Email</label>
+                <input
+                  type="email"
+                  disabled
+                  value={editingTeacher.email}
+                  className="w-full px-3 py-1.5 bg-slate-100 border border-slate-200 rounded text-xs font-mono text-slate-500 cursor-not-allowed"
+                />
+                <span className="text-[10px] text-slate-400 font-mono mt-0.5 block">Email address cannot be changed</span>
+              </div>
+
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <label className="block font-medium text-slate-700 mb-1">Phone</label>
+                  <input
+                    type="tel"
+                    value={editPhone}
+                    onChange={(e) => setEditPhone(e.target.value)}
+                    className="w-full px-3 py-1.5 bg-slate-50 border border-slate-200 rounded text-xs focus:bg-white focus:outline-none focus:border-slate-400"
+                  />
+                </div>
+                <div>
+                  <label className="block font-medium text-slate-700 mb-1">Status</label>
+                  <select
+                    value={editStatus}
+                    onChange={(e) => setEditStatus(e.target.value)}
+                    className="w-full px-2.5 py-1.5 bg-slate-50 border border-slate-200 rounded text-xs focus:bg-white focus:outline-none focus:border-slate-400"
+                  >
+                    <option value="active">Active</option>
+                    <option value="inactive">Inactive</option>
+                  </select>
+                </div>
+              </div>
+
+              <div>
+                <label className="block font-medium text-slate-700 mb-1">Specialization</label>
+                <input
+                  type="text"
+                  placeholder="e.g. Abacus Mental Arithmetic"
+                  value={editSpecialization}
+                  onChange={(e) => setEditSpecialization(e.target.value)}
+                  className="w-full px-3 py-1.5 bg-slate-50 border border-slate-200 rounded text-xs focus:bg-white focus:outline-none focus:border-slate-400"
+                />
+              </div>
+
+              <div>
+                <label className="block font-medium text-slate-700 mb-1">Qualification / Credentials</label>
+                <input
+                  type="text"
+                  placeholder="e.g. Certified Senior Instructor"
+                  value={editQualification}
+                  onChange={(e) => setEditQualification(e.target.value)}
+                  className="w-full px-3 py-1.5 bg-slate-50 border border-slate-200 rounded text-xs focus:bg-white focus:outline-none focus:border-slate-400"
+                />
+              </div>
+
+              <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-200">
+                <button
+                  type="button"
+                  onClick={() => setEditingTeacher(null)}
+                  disabled={editSubmitting}
+                  className="px-3 py-1.5 border border-slate-200 text-slate-600 rounded text-xs hover:bg-slate-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={editSubmitting}
+                  className="px-3.5 py-1.5 bg-slate-900 hover:bg-slate-800 text-white rounded text-xs font-semibold shadow-xs"
+                >
+                  {editSubmitting ? 'Saving...' : 'Save Changes'}
                 </button>
               </div>
             </form>

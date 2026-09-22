@@ -150,6 +150,26 @@ batchesRouter.patch(
         }
       }
 
+      if (capacity !== undefined && capacity !== null) {
+        const numCapacity = Number(capacity);
+        if (isNaN(numCapacity) || numCapacity <= 0) {
+          res.status(400).json({ error: 'Capacity must be a positive integer.' });
+          return;
+        }
+
+        const enrolledCountRes = await query(
+          `SELECT COUNT(*)::int as count FROM enrollments WHERE batch_id = $1 AND status = 'active'`,
+          [id]
+        );
+        const currentCount = enrolledCountRes.rows[0].count;
+        if (numCapacity < currentCount) {
+          res.status(400).json({
+            error: `Cannot reduce capacity to ${numCapacity}. There are currently ${currentCount} active students enrolled in this cohort.`
+          });
+          return;
+        }
+      }
+
       const result = await query(
         `UPDATE batches
          SET name = COALESCE($1, name),
