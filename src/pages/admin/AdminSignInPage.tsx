@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { ADMIN_ROUTES, getPublicUrl } from '../../routes/paths';
 import { Shield, AlertCircle, ArrowRight, Loader2, ShieldAlert, LogOut, ExternalLink } from 'lucide-react';
+import { PasswordInput } from '../../components/common/PasswordInput';
 
 export const AdminSignInPage: React.FC = () => {
   const { user, signIn, signOut, isLoading } = useAuth();
@@ -166,13 +167,13 @@ export const AdminSignInPage: React.FC = () => {
                   Password
                 </label>
               </div>
-              <input
-                type="password"
+              <PasswordInput
                 required
                 autoComplete="current-password"
                 placeholder="••••••••••••"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
+                buttonClassName="text-slate-400 hover:text-slate-200 focus-visible:ring-slate-400"
                 className="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-lg text-xs text-white placeholder-slate-500 focus:outline-none focus:border-slate-500 focus:ring-1 focus:ring-slate-500 transition-colors"
               />
             </div>

@@ -24,9 +24,24 @@ const applicationSchema = z.object({
   personalDetails: z.string().max(2000).optional(),
   guardianName: z.string().min(2, 'Guardian name is required').max(255),
   guardianRelationship: z.string().min(2, 'Relationship to student is required').max(64),
-  guardianPhone: z.string().min(7, 'Valid guardian phone number is required').max(64),
+  guardianPhone: z
+    .string()
+    .trim()
+    .min(7, 'Valid guardian phone number is required')
+    .max(25, 'Phone number cannot exceed 25 characters')
+    .regex(/^\+?[0-9\s\-()]+$/, 'Phone number may only contain digits, spaces, hyphens, and leading +')
+    .refine((val) => val.indexOf('+') <= 0, { message: '+ may only appear at the beginning of the phone number' })
+    .refine((val) => val.replace(/\D/g, '').length >= 7, { message: 'Phone number must contain at least 7 digits' }),
   guardianEmail: z.string().email('Valid guardian email is required').transform((e) => e.toLowerCase().trim()),
-  contactPhone: z.string().max(64).optional(),
+  contactPhone: z
+    .string()
+    .trim()
+    .max(25, 'Contact phone cannot exceed 25 characters')
+    .regex(/^\+?[0-9\s\-()]+$/, 'Contact phone may only contain digits, spaces, hyphens, and leading +')
+    .refine((val) => val.indexOf('+') <= 0, { message: '+ may only appear at the beginning of the phone number' })
+    .refine((val) => val.replace(/\D/g, '').length >= 7, { message: 'Contact phone must contain at least 7 digits' })
+    .optional()
+    .nullable(),
   address: z.string().max(500).optional(),
   schoolName: z.string().max(255).optional(),
   currentGrade: z.string().max(64).optional(),

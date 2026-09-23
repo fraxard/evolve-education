@@ -137,3 +137,71 @@ programsRouter.patch(
     }
   }
 );
+
+// DELETE /api/programs/:id - Admin: Safe Delete Program
+programsRouter.delete(
+  '/:id',
+  requireAuth,
+  requireRole('admin'),
+  async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+    try {
+      const { id } = req.params;
+      const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+      if (!uuidRegex.test(id)) {
+        res.status(400).json({ error: 'Invalid program ID.' });
+        return;
+      }
+
+      const progRes = await query('SELECT id, name FROM programs WHERE id = $1', [id]);
+      if (progRes.rows.length === 0) {
+        res.status(404).json({ error: 'Program not found.' });
+        return;
+      }
+      const programName = progRes.rows[0].name;
+
+      // 1. Check cohorts / batches
+      const batchCountRes = await query('SELECT COUNT(*)::int as count FROM batches WHERE program_id = $1', [id]);
+      if (batchCountRes.rows[0].count > 0) {
+        res.status(400).json({
+          error: `Cannot delete program "${programName}" because ${batchCountRes.rows[0].count} cohort batch(es) are associated with it. Please delete or reassign the cohorts first, or deactivate the program instead.`,
+          code: 'DEPENDENCY_EXISTS',
+        });
+        return;
+      }
+
+      // 2. Check enrollments
+      const enrollCountRes = await query('SELECT COUNT(*)::int as count FROM enrollments WHERE program_id = $1', [id]);
+      if (enrollCountRes.rows[0].count > 0) {
+        res.status(400).json({
+          error: `Cannot delete program "${programName}" because it has ${enrollCountRes.rows[0].count} student enrollment record(s). Educational history cannot be deleted. Please deactivate the program instead.`,
+          code: 'DEPENDENCY_EXISTS',
+        });
+        return;
+      }
+
+      // 3. Check applications
+      const appCountRes = await query('SELECT COUNT(*)::int as count FROM student_applications WHERE requested_program_id = $1', [id]);
+      if (appCountRes.rows[0].count > 0) {
+        res.status(400).json({
+          error: `Cannot delete program "${programName}" because ${appCountRes.rows[0].count} student application(s) request this curriculum. Please deactivate the program instead.`,
+          code: 'DEPENDENCY_EXISTS',
+        });
+        return;
+      }
+
+      // Safe to delete
+      await query('DELETE FROM programs WHERE id = $1', [id]);
+
+      await query(
+        `INSERT INTO audit_logs (actor_id, actor_role, action, target_entity, target_id, details)
+         VALUES ($1, 'admin', 'PROGRAM_DELETED', 'programs', $2, $3);`,
+        [req.currentUser!.id, id, JSON.stringify({ name: programName })]
+      );
+
+      res.json({ message: `Program "${programName}" has been successfully deleted.` });
+    } catch (err) {
+      console.error('[Programs API] Delete error:', err);
+      res.status(500).json({ error: 'Failed to delete program.' });
+    }
+  }
+);

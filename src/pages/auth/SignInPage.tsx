@@ -4,6 +4,7 @@ import { useAuth } from '../../context/AuthContext';
 import { ROUTES, getAdminUrl } from '../../routes/paths';
 import { siteContent } from '../../data/content';
 import { ArrowRight, Lock, Mail, AlertCircle, Clock, XCircle, LogOut } from 'lucide-react';
+import { PasswordInput } from '../../components/common/PasswordInput';
 
 export const SignInPage: React.FC = () => {
   const { user, signIn, signOut, isLoading } = useAuth();
@@ -306,13 +307,12 @@ export const SignInPage: React.FC = () => {
                 <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-brand-dark-muted">
                   <Lock className="w-4 h-4" />
                 </div>
-                <input
-                  type="password"
+                <PasswordInput
                   required
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="••••••••"
-                  className="w-full pl-10 pr-4 py-3 rounded-2xl border border-brand-border focus:border-brand-leaf focus:ring-2 focus:ring-brand-leaf/20 outline-none text-sm font-body transition-all"
+                  className="pl-10 py-3 rounded-2xl border border-brand-border focus:border-brand-leaf focus:ring-2 focus:ring-brand-leaf/20 outline-none text-sm font-body transition-all"
                 />
               </div>
             </div>

@@ -14,7 +14,7 @@ async function seed() {
       `INSERT INTO programs (name, slug, description, level, duration, is_active)
        VALUES ($1, $2, $3, $4, $5, $6)
        ON CONFLICT (slug) DO UPDATE 
-       SET name = EXCLUDED.name, description = EXCLUDED.description
+       SET name = EXCLUDED.name, description = EXCLUDED.description, is_active = true
        RETURNING id;`,
       [
         'Abacus',

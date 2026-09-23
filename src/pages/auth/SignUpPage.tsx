@@ -3,6 +3,8 @@ import { Link, useNavigate } from 'react-router-dom';
 import { ROUTES } from '../../routes/paths';
 import { siteContent } from '../../data/content';
 import { ArrowRight, ArrowLeft, CheckCircle2, AlertCircle, User, Users, BookOpen, Lock } from 'lucide-react';
+import { PasswordInput } from '../../components/common/PasswordInput';
+import { sanitizePhone, isValidPhone } from '../../utils/validation';
 
 interface ProgramOption {
   id: string;
@@ -65,6 +67,8 @@ export const SignUpPage: React.FC = () => {
     if (type === 'checkbox') {
       const checked = (e.target as HTMLInputElement).checked;
       setFormData((prev) => ({ ...prev, [name]: checked }));
+    } else if (name === 'guardianPhone') {
+      setFormData((prev) => ({ ...prev, [name]: sanitizePhone(value) }));
     } else {
       setFormData((prev) => ({ ...prev, [name]: value }));
     }
@@ -86,8 +90,8 @@ export const SignUpPage: React.FC = () => {
         setError('Please provide parent / guardian name.');
         return false;
       }
-      if (!formData.guardianPhone.trim() || formData.guardianPhone.trim().length < 7) {
-        setError('Please enter a valid guardian phone number.');
+      if (!formData.guardianPhone.trim() || !isValidPhone(formData.guardianPhone)) {
+        setError('Please enter a valid guardian phone number (minimum 7 digits, digits and leading + only).');
         return false;
       }
       if (!formData.guardianEmail.trim() || !formData.guardianEmail.includes('@')) {
@@ -601,14 +605,13 @@ export const SignUpPage: React.FC = () => {
                     <label className="block text-xs font-accent font-bold uppercase tracking-wider text-brand-blue mb-1">
                       Create Password * (min 8 chars)
                     </label>
-                    <input
-                      type="password"
+                    <PasswordInput
                       required
                       name="password"
                       value={formData.password}
                       onChange={handleChange}
                       placeholder="••••••••"
-                      className="w-full px-4 py-3 rounded-2xl border border-brand-border focus:border-brand-leaf focus:ring-2 focus:ring-brand-leaf/20 outline-none text-sm font-body"
+                      className="px-4 py-3 rounded-2xl border border-brand-border focus:border-brand-leaf focus:ring-2 focus:ring-brand-leaf/20 outline-none text-sm font-body"
                     />
                   </div>
 
@@ -616,14 +619,13 @@ export const SignUpPage: React.FC = () => {
                     <label className="block text-xs font-accent font-bold uppercase tracking-wider text-brand-blue mb-1">
                       Confirm Password *
                     </label>
-                    <input
-                      type="password"
+                    <PasswordInput
                       required
                       name="confirmPassword"
                       value={formData.confirmPassword}
                       onChange={handleChange}
                       placeholder="••••••••"
-                      className="w-full px-4 py-3 rounded-2xl border border-brand-border focus:border-brand-leaf focus:ring-2 focus:ring-brand-leaf/20 outline-none text-sm font-body"
+                      className="px-4 py-3 rounded-2xl border border-brand-border focus:border-brand-leaf focus:ring-2 focus:ring-brand-leaf/20 outline-none text-sm font-body"
                     />
                   </div>
                 </div>

@@ -36,11 +36,21 @@ teachersRouter.get(
   }
 );
 
+const phoneValidator = z
+  .string()
+  .trim()
+  .max(25, 'Phone number cannot exceed 25 characters')
+  .regex(/^\+?[0-9\s\-()]+$/, 'Phone number may only contain digits, spaces, hyphens, and leading +')
+  .refine((val) => val.indexOf('+') <= 0, { message: '+ may only appear at the beginning of the phone number' })
+  .refine((val) => val.replace(/\D/g, '').length >= 7, { message: 'Phone number must contain at least 7 digits' })
+  .optional()
+  .nullable();
+
 const createTeacherSchema = z.object({
   fullName: z.string().min(2, 'Full name is required').max(255),
   email: z.string().email('Valid email is required').transform((e) => e.toLowerCase().trim()),
   password: z.string().min(8, 'Password must be at least 8 characters'),
-  phone: z.string().max(64).optional(),
+  phone: phoneValidator,
   qualification: z.string().max(255).optional(),
   specialization: z.string().max(255).optional(),
 });
@@ -107,6 +117,14 @@ teachersRouter.post(
 );
 
 // PATCH /api/teachers/:id - Admin: Update Teacher Status / Details
+const updateTeacherSchema = z.object({
+  fullName: z.string().min(2, 'Full name must be at least 2 characters').max(255).optional(),
+  status: z.enum(['active', 'inactive']).optional(),
+  phone: phoneValidator,
+  qualification: z.string().max(255).optional().nullable(),
+  specialization: z.string().max(255).optional().nullable(),
+});
+
 teachersRouter.patch(
   '/:id',
   requireAuth,
@@ -114,12 +132,15 @@ teachersRouter.patch(
   async (req: AuthenticatedRequest, res: Response): Promise<void> => {
     try {
       const { id } = req.params;
-      const { fullName, status, phone, qualification, specialization } = req.body;
-
-      if (status && !['active', 'inactive'].includes(status)) {
-        res.status(400).json({ error: 'Status must be active or inactive.' });
+      const parseResult = updateTeacherSchema.safeParse(req.body);
+      if (!parseResult.success) {
+        res.status(400).json({
+          error: 'Validation failed',
+          details: parseResult.error.errors.map((e) => ({ field: e.path.join('.'), message: e.message })),
+        });
         return;
       }
+      const { fullName, status, phone, qualification, specialization } = parseResult.data;
 
       const result = await withTransaction(async (client) => {
         const teacherRes = await client.query('SELECT user_id FROM teachers WHERE id = $1', [id]);
@@ -168,3 +189,83 @@ teachersRouter.patch(
     }
   }
 );
+
+// DELETE /api/teachers/:id - Admin: Safe Delete Teacher
+teachersRouter.delete(
+  '/:id',
+  requireAuth,
+  requireRole('admin'),
+  async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+    try {
+      const { id } = req.params;
+      const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+      if (!uuidRegex.test(id)) {
+        res.status(400).json({ error: 'Invalid teacher ID.' });
+        return;
+      }
+
+      const teacherRes = await query('SELECT id, user_id, full_name FROM teachers WHERE id = $1', [id]);
+      if (teacherRes.rows.length === 0) {
+        res.status(404).json({ error: 'Teacher not found.' });
+        return;
+      }
+
+      const teacher = teacherRes.rows[0];
+      const teacherName = teacher.full_name;
+
+      // 1. Check assigned batches/cohorts
+      const batchCountRes = await query('SELECT COUNT(*)::int as count FROM batches WHERE teacher_id = $1', [id]);
+      if (batchCountRes.rows[0].count > 0) {
+        res.status(400).json({
+          error: `Cannot delete instructor "${teacherName}" because they are currently assigned to ${batchCountRes.rows[0].count} cohort batch(es). Please reassign the cohorts before deleting, or set the instructor status to inactive instead.`,
+          code: 'DEPENDENCY_EXISTS',
+        });
+        return;
+      }
+
+      // 2. Check student enrollments
+      const enrollCountRes = await query('SELECT COUNT(*)::int as count FROM enrollments WHERE teacher_id = $1', [id]);
+      if (enrollCountRes.rows[0].count > 0) {
+        res.status(400).json({
+          error: `Cannot delete instructor "${teacherName}" because they are recorded on ${enrollCountRes.rows[0].count} student enrollment record(s). Educational history must be preserved. Please deactivate the instructor account instead.`,
+          code: 'DEPENDENCY_EXISTS',
+        });
+        return;
+      }
+
+      // 3. Check teacher progress notes
+      const notesCountRes = await query('SELECT COUNT(*)::int as count FROM teacher_notes WHERE teacher_id = $1', [id]);
+      if (notesCountRes.rows[0].count > 0) {
+        res.status(400).json({
+          error: `Cannot delete instructor "${teacherName}" because they have authored ${notesCountRes.rows[0].count} student progress note(s). Historical notes must be preserved. Please deactivate the instructor account instead.`,
+          code: 'DEPENDENCY_EXISTS',
+        });
+        return;
+      }
+
+      // Safe to delete: Delete teacher & associated user in a transaction
+      await withTransaction(async (client) => {
+        await client.query('DELETE FROM teachers WHERE id = $1', [id]);
+        if (teacher.user_id) {
+          await client.query('DELETE FROM users WHERE id = $1', [teacher.user_id]);
+        }
+        await client.query(
+          `INSERT INTO audit_logs (actor_id, actor_role, action, target_entity, target_id, details, ip_address)
+           VALUES ($1, 'admin', 'TEACHER_DELETED', 'teachers', $2, $3, $4);`,
+          [
+            req.currentUser!.id,
+            id,
+            JSON.stringify({ fullName: teacherName, userId: teacher.user_id }),
+            req.ip || null,
+          ]
+        );
+      });
+
+      res.json({ message: `Instructor "${teacherName}" has been successfully deleted.` });
+    } catch (err) {
+      console.error('[Teachers API] Delete error:', err);
+      res.status(500).json({ error: 'Failed to delete teacher.' });
+    }
+  }
+);
+

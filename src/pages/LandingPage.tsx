@@ -38,12 +38,12 @@ export const LandingPage: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen flex flex-col bg-brand-cream text-brand-dark selection:bg-brand-leaf selection:text-white">
+    <div className="min-h-screen flex flex-col bg-brand-cream text-brand-dark selection:bg-brand-leaf selection:text-white overflow-x-clip max-w-full">
       {/* 70px Fixed/Sticky Header with Programs Dropdown & Auth / About triggers */}
       <Header onAboutClick={() => setIsAboutModalOpen(true)} />
 
       {/* Main Conversion Flow Following Wireframe 01 - 08 */}
-      <main className="flex-1">
+      <main className="flex-1 overflow-x-clip max-w-full">
         {/* 01. Hero */}
         <Hero onExploreAbacus={() => setSelectedProgram('Abacus')} />
 

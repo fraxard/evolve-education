@@ -209,3 +209,61 @@ batchesRouter.patch(
     }
   }
 );
+
+// DELETE /api/batches/:id - Admin: Safe Delete Cohort Batch
+batchesRouter.delete(
+  '/:id',
+  requireAuth,
+  requireRole('admin'),
+  async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+    try {
+      const { id } = req.params;
+      const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+      if (!uuidRegex.test(id)) {
+        res.status(400).json({ error: 'Invalid batch ID.' });
+        return;
+      }
+
+      const batchRes = await query('SELECT id, name FROM batches WHERE id = $1', [id]);
+      if (batchRes.rows.length === 0) {
+        res.status(404).json({ error: 'Batch not found.' });
+        return;
+      }
+      const batchName = batchRes.rows[0].name;
+
+      // 1. Check student enrollments (active, completed, transferred, or withdrawn)
+      const enrollCountRes = await query('SELECT COUNT(*)::int as count FROM enrollments WHERE batch_id = $1', [id]);
+      if (enrollCountRes.rows[0].count > 0) {
+        res.status(400).json({
+          error: `Cannot delete cohort "${batchName}" because it has ${enrollCountRes.rows[0].count} student enrollment record(s). Educational history must be preserved. Please deactivate the cohort instead.`,
+          code: 'DEPENDENCY_EXISTS',
+        });
+        return;
+      }
+
+      // 2. Check assessments
+      const assessCountRes = await query('SELECT COUNT(*)::int as count FROM assessments WHERE batch_id = $1', [id]);
+      if (assessCountRes.rows[0].count > 0) {
+        res.status(400).json({
+          error: `Cannot delete cohort "${batchName}" because it is linked to ${assessCountRes.rows[0].count} assessment(s). Please deactivate the cohort instead.`,
+          code: 'DEPENDENCY_EXISTS',
+        });
+        return;
+      }
+
+      // Safe to delete
+      await query('DELETE FROM batches WHERE id = $1', [id]);
+
+      await query(
+        `INSERT INTO audit_logs (actor_id, actor_role, action, target_entity, target_id, details)
+         VALUES ($1, 'admin', 'BATCH_DELETED', 'batches', $2, $3);`,
+        [req.currentUser!.id, id, JSON.stringify({ name: batchName })]
+      );
+
+      res.json({ message: `Cohort batch "${batchName}" has been successfully deleted.` });
+    } catch (err) {
+      console.error('[Batches API] Delete error:', err);
+      res.status(500).json({ error: 'Failed to delete batch.' });
+    }
+  }
+);

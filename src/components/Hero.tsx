@@ -232,7 +232,7 @@ export const Hero: React.FC<{ onExploreAbacus?: () => void }> = ({ onExploreAbac
               </div>
 
               {/* Floating Badge 1 (Top Left) */}
-              <div className="absolute -top-4 -left-4 sm:-left-6 bg-white py-2 px-4 rounded-2xl shadow-card border border-brand-border/60 flex items-center gap-2.5 z-20">
+              <div className="absolute -top-4 -left-2 sm:-left-4 lg:-left-6 bg-white py-2 px-3 sm:px-4 rounded-2xl shadow-card border border-brand-border/60 flex items-center gap-2.5 z-20">
                 <div className="w-8 h-8 rounded-xl bg-brand-soft-green/30 flex items-center justify-center text-brand-leaf">
                   <span className="font-accent font-bold text-sm">🌱</span>
                 </div>
@@ -243,7 +243,7 @@ export const Hero: React.FC<{ onExploreAbacus?: () => void }> = ({ onExploreAbac
               </div>
 
               {/* Floating Badge 2 (Bottom Right) */}
-              <div className="absolute -bottom-4 -right-4 sm:-right-6 bg-white py-2.5 px-4 rounded-2xl shadow-card border border-brand-border/60 flex items-center gap-2.5 z-20">
+              <div className="absolute -bottom-4 -right-2 sm:-right-4 lg:-right-6 bg-white py-2.5 px-3 sm:px-4 rounded-2xl shadow-card border border-brand-border/60 flex items-center gap-2.5 z-20">
                 <div className="w-8 h-8 rounded-xl bg-brand-baby-blue/40 flex items-center justify-center text-brand-blue">
                   <span className="font-accent font-bold text-sm">🦋</span>
                 </div>

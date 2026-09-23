@@ -6,7 +6,11 @@ import {
   X,
   Edit2,
   CheckCircle2,
+  Trash2,
+  AlertTriangle,
 } from 'lucide-react';
+import { PasswordInput } from '../../components/common/PasswordInput';
+import { sanitizePhone, isValidPhone } from '../../utils/validation';
 
 interface Teacher {
   id: string;
@@ -49,6 +53,11 @@ export const TeachersPage: React.FC = () => {
   const [editSubmitting, setEditSubmitting] = useState(false);
   const [editError, setEditError] = useState<string | null>(null);
 
+  // Delete Modal
+  const [deletingTeacher, setDeletingTeacher] = useState<Teacher | null>(null);
+  const [deleteLoading, setDeleteLoading] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
+
   const fetchTeachers = async () => {
     setLoading(true);
     try {
@@ -71,6 +80,12 @@ export const TeachersPage: React.FC = () => {
   const handleAddTeacher = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
+
+    if (phone.trim() && !isValidPhone(phone)) {
+      setError('Please provide a valid phone number (minimum 7 digits, digits and leading + only).');
+      return;
+    }
+
     setSubmitting(true);
 
     try {
@@ -147,6 +162,11 @@ export const TeachersPage: React.FC = () => {
       return;
     }
 
+    if (editPhone.trim() && !isValidPhone(editPhone)) {
+      setEditError('Please provide a valid phone number (minimum 7 digits, digits and leading + only).');
+      return;
+    }
+
     setEditError(null);
     setEditSubmitting(true);
 
@@ -178,6 +198,30 @@ export const TeachersPage: React.FC = () => {
       setEditError(msg);
     } finally {
       setEditSubmitting(false);
+    }
+  };
+
+  const handleDeleteTeacher = async () => {
+    if (!deletingTeacher) return;
+    setDeleteLoading(true);
+    setDeleteError(null);
+    try {
+      const res = await fetch(`/api/teachers/${deletingTeacher.id}`, {
+        method: 'DELETE',
+        credentials: 'include',
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.error || 'Failed to delete faculty member');
+      }
+      setSuccessMessage(data.message || `Faculty member "${deletingTeacher.full_name}" deleted successfully.`);
+      setTimeout(() => setSuccessMessage(null), 4000);
+      setDeletingTeacher(null);
+      await fetchTeachers();
+    } catch (err: unknown) {
+      setDeleteError(err instanceof Error ? err.message : 'Error deleting faculty member');
+    } finally {
+      setDeleteLoading(false);
     }
   };
 
@@ -305,11 +349,22 @@ export const TeachersPage: React.FC = () => {
                         onClick={() => toggleStatus(t)}
                         className={`text-[11px] font-medium underline ${
                           t.status === 'active'
-                            ? 'text-rose-600 hover:text-rose-700'
+                            ? 'text-amber-600 hover:text-amber-700'
                             : 'text-emerald-600 hover:text-emerald-700'
                         }`}
                       >
                         {t.status === 'active' ? 'Deactivate' : 'Activate'}
+                      </button>
+                      <button
+                        onClick={() => {
+                          setDeletingTeacher(t);
+                          setDeleteError(null);
+                        }}
+                        className="text-[11px] font-medium text-rose-600 hover:text-rose-700 inline-flex items-center gap-1 px-2 py-0.5 rounded hover:bg-rose-50 transition-colors"
+                        title="Delete Faculty"
+                      >
+                        <Trash2 className="w-3 h-3" />
+                        <span>Delete</span>
                       </button>
                     </td>
                   </tr>
@@ -375,8 +430,7 @@ export const TeachersPage: React.FC = () => {
                   <label className="block font-medium text-slate-700 mb-1">
                     Initial Password <span className="text-rose-500">*</span>
                   </label>
-                  <input
-                    type="password"
+                  <PasswordInput
                     required
                     minLength={8}
                     placeholder="Min 8 chars"
@@ -394,7 +448,7 @@ export const TeachersPage: React.FC = () => {
                     type="tel"
                     placeholder="+1 555-019-2834"
                     value={phone}
-                    onChange={(e) => setPhone(e.target.value)}
+                    onChange={(e) => setPhone(sanitizePhone(e.target.value))}
                     className="w-full px-3 py-1.5 bg-slate-50 border border-slate-200 rounded text-xs focus:bg-white focus:outline-none focus:border-slate-400"
                   />
                 </div>
@@ -496,7 +550,7 @@ export const TeachersPage: React.FC = () => {
                   <input
                     type="tel"
                     value={editPhone}
-                    onChange={(e) => setEditPhone(e.target.value)}
+                    onChange={(e) => setEditPhone(sanitizePhone(e.target.value))}
                     className="w-full px-3 py-1.5 bg-slate-50 border border-slate-200 rounded text-xs focus:bg-white focus:outline-none focus:border-slate-400"
                   />
                 </div>
@@ -553,6 +607,85 @@ export const TeachersPage: React.FC = () => {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {deletingTeacher && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm overflow-y-auto">
+          <div className="bg-white rounded-xl border border-slate-200 shadow-xl max-w-md w-full overflow-hidden animate-in fade-in zoom-in-95 duration-150">
+            <div className="p-4 border-b border-slate-100 flex items-center justify-between">
+              <div className="flex items-center gap-2 text-rose-600 font-semibold text-sm">
+                <AlertTriangle className="w-4 h-4" />
+                <span>Confirm Faculty Deletion</span>
+              </div>
+              <button
+                onClick={() => {
+                  setDeletingTeacher(null);
+                  setDeleteError(null);
+                }}
+                disabled={deleteLoading}
+                className="text-slate-400 hover:text-slate-600"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="p-4 space-y-3">
+              <p className="text-xs text-slate-700 leading-relaxed">
+                Are you sure you want to permanently delete the faculty member{' '}
+                <strong className="text-slate-900 font-semibold">{deletingTeacher.full_name}</strong>?
+              </p>
+              <div className="p-2.5 bg-slate-50 border border-slate-200 rounded text-[11px] text-slate-600 space-y-1">
+                <p className="font-medium text-slate-700">Safety Check Notice:</p>
+                <p>
+                  Instructors with assigned cohorts, student enrollment history, or authored progress notes cannot be deleted. If historical records exist, please deactivate the instructor account instead.
+                </p>
+              </div>
+
+              {deleteError && (
+                <div className="p-3 bg-rose-50 border border-rose-200 rounded text-rose-800 text-xs flex items-start gap-2">
+                  <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5 text-rose-600" />
+                  <div className="flex-1">
+                    <p className="font-semibold text-rose-900">Deletion Blocked</p>
+                    <p className="mt-0.5 text-[11px] leading-relaxed">{deleteError}</p>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <div className="p-3.5 bg-slate-50 border-t border-slate-100 flex justify-end gap-2">
+              <button
+                type="button"
+                disabled={deleteLoading}
+                onClick={() => {
+                  setDeletingTeacher(null);
+                  setDeleteError(null);
+                }}
+                className="px-3 py-1.5 text-xs text-slate-600 hover:text-slate-900 font-medium rounded border border-slate-200 hover:bg-slate-100 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                disabled={deleteLoading}
+                onClick={handleDeleteTeacher}
+                className="px-3.5 py-1.5 text-xs font-semibold text-white bg-rose-600 hover:bg-rose-700 disabled:opacity-50 rounded transition-colors inline-flex items-center gap-1.5 shadow-xs"
+              >
+                {deleteLoading ? (
+                  <>
+                    <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                    <span>Checking & Deleting...</span>
+                  </>
+                ) : (
+                  <>
+                    <Trash2 className="w-3.5 h-3.5" />
+                    <span>Delete Faculty</span>
+                  </>
+                )}
+              </button>
+            </div>
           </div>
         </div>
       )}

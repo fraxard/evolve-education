@@ -49,7 +49,7 @@ export const Methodology: React.FC = () => {
         <div className="hidden lg:block relative mb-8">
           {/* Connecting Curved / Dashed Pathway */}
           <div className="absolute top-16 left-[10%] right-[10%] h-1 pointer-events-none -z-0">
-            <svg className="w-full h-8 overflow-visible" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <svg className="w-full h-8" viewBox="0 0 1000 30" preserveAspectRatio="none" fill="none" xmlns="http://www.w3.org/2000/svg">
               <path
                 d="M 0,4 Q 250,24 500,4 T 1000,4"
                 stroke="#678A48"

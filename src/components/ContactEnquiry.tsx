@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { siteContent } from '../data/content';
 import { Mail, Phone, MapPin, Clock, Send, CheckCircle2, AlertCircle, MessageSquare } from 'lucide-react';
+import { sanitizePhone, isValidPhone } from '../utils/validation';
 
 interface ContactEnquiryProps {
   selectedProgram?: string;
@@ -43,8 +44,8 @@ export const ContactEnquiry: React.FC<ContactEnquiryProps> = ({ selectedProgram 
 
     if (!formData.phone.trim()) {
       newErrors.phone = 'Phone / WhatsApp number is required';
-    } else if (formData.phone.trim().length < 7) {
-      newErrors.phone = 'Please provide a complete phone number';
+    } else if (!isValidPhone(formData.phone)) {
+      newErrors.phone = 'Please provide a valid phone number (digits and optional leading + only)';
     }
 
     setErrors(newErrors);
@@ -305,7 +306,7 @@ export const ContactEnquiry: React.FC<ContactEnquiryProps> = ({ selectedProgram 
                         id="phone"
                         value={formData.phone}
                         onChange={(e) => {
-                          setFormData({ ...formData, phone: e.target.value });
+                          setFormData({ ...formData, phone: sanitizePhone(e.target.value) });
                           if (errors.phone) setErrors({ ...errors, phone: '' });
                         }}
                         placeholder="Your contact number"

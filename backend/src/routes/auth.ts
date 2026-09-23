@@ -118,6 +118,89 @@ authRouter.post('/signout', (req: AuthenticatedRequest, res: Response) => {
   });
 });
 
+const passwordChangeLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 10,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'Too many password update attempts. Please wait 15 minutes before trying again.' },
+});
+
+const changePasswordSchema = z
+  .object({
+    currentPassword: z.string().min(1, 'Current password is required'),
+    newPassword: z
+      .string()
+      .min(8, 'New password must be at least 8 characters')
+      .regex(/[A-Z]/, 'New password must contain at least one uppercase letter')
+      .regex(/[a-z]/, 'New password must contain at least one lowercase letter')
+      .regex(/[0-9]/, 'New password must contain at least one number')
+      .regex(/[^A-Za-z0-9]/, 'New password must contain at least one special character'),
+    confirmPassword: z.string().optional(),
+  })
+  .refine((data) => !data.confirmPassword || data.newPassword === data.confirmPassword, {
+    message: 'New password and confirmation do not match',
+    path: ['confirmPassword'],
+  });
+
+// POST /api/auth/change-password
+authRouter.post(
+  '/change-password',
+  passwordChangeLimiter,
+  requireAuth,
+  async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+    try {
+      const parseResult = changePasswordSchema.safeParse(req.body);
+      if (!parseResult.success) {
+        res.status(400).json({ error: parseResult.error.errors[0].message });
+        return;
+      }
+
+      const { currentPassword, newPassword } = parseResult.data;
+      const userId = req.currentUser!.id;
+
+      const userRes = await query('SELECT id, email, role, password_hash FROM users WHERE id = $1', [userId]);
+      if (userRes.rows.length === 0) {
+        res.status(404).json({ error: 'User account not found.' });
+        return;
+      }
+
+      const user = userRes.rows[0];
+      const isMatch = await bcrypt.compare(currentPassword, user.password_hash);
+      if (!isMatch) {
+        res.status(400).json({ error: 'Current password does not match our records.' });
+        return;
+      }
+
+      if (currentPassword === newPassword) {
+        res.status(400).json({ error: 'New password must be different from current password.' });
+        return;
+      }
+
+      const newHash = await bcrypt.hash(newPassword, 12);
+      await query('UPDATE users SET password_hash = $1, updated_at = NOW() WHERE id = $2', [newHash, userId]);
+
+      // Record in audit log
+      await query(
+        `INSERT INTO audit_logs (actor_id, actor_role, action, target_entity, target_id, details, ip_address)
+         VALUES ($1, $2, 'ADMIN_PASSWORD_CHANGED', 'users', $3, $4, $5);`,
+        [
+          userId,
+          user.role,
+          String(userId),
+          JSON.stringify({ email: user.email, event: 'Password updated via security portal' }),
+          req.ip || null,
+        ]
+      );
+
+      res.json({ message: 'Password updated successfully.' });
+    } catch (err) {
+      console.error('[Auth API] Change password error:', err);
+      res.status(500).json({ error: 'Failed to change password.' });
+    }
+  }
+);
+
 // In-memory short-lived handoff tickets for seamless dev cross-hostname navigation (60s TTL)
 const handoffTickets = new Map<string, { user: any; expires: number }>();
 
