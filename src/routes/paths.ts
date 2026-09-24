@@ -5,65 +5,38 @@
  * and the independent institutional Admin Portal (admin.domain.com / admin.localhost).
  */
 
-/**
- * Checks whether the current window location corresponds to the Admin subdomain.
- * Supports both local development (admin.localhost) and production (admin.*).
- */
-export const isAdminHostname = (): boolean => {
-  if (typeof window === 'undefined') return false;
-  const h = window.location.hostname.toLowerCase();
-  return h === 'admin.localhost' || h.startsWith('admin.');
-};
+export {
+  type HostSurface,
+  getHostSurface,
+  isAdminHostname,
+  isAppHostname,
+  isPublicHostname,
+  getAdminUrl,
+  getAppUrl,
+  getPublicUrl,
+} from '../utils/hostname';
 
 /**
- * Builds an absolute URL pointing to the Admin subdomain.
- * In local dev: http://admin.localhost:5173{path}
- * In production: https://admin.{domain}{path}
+ * Operational App Routes (app.localhost:5173 / app.domain.com)
+ * Shared root namespace for both Teacher and Student portals.
  */
-export const getAdminUrl = (path: string = '/dashboard'): string => {
-  if (typeof window === 'undefined') return path;
-  const { protocol, port, hostname } = window.location;
-
-  if (hostname === 'localhost' || hostname === '127.0.0.1') {
-    const portPart = port ? `:${port}` : '';
-    return `${protocol}//admin.localhost${portPart}${path}`;
-  }
-
-  if (hostname === 'admin.localhost') {
-    return path;
-  }
-
-  if (!hostname.startsWith('admin.')) {
-    const domain = hostname.startsWith('www.') ? hostname.slice(4) : hostname;
-    const portPart = port ? `:${port}` : '';
-    return `${protocol}//admin.${domain}${portPart}${path}`;
-  }
-
-  return path;
-};
-
-/**
- * Builds an absolute URL pointing to the Public website.
- * In local dev: http://localhost:5173{path}
- * In production: https://{domain}{path}
- */
-export const getPublicUrl = (path: string = '/'): string => {
-  if (typeof window === 'undefined') return path;
-  const { protocol, port, hostname } = window.location;
-
-  if (hostname.startsWith('admin.localhost')) {
-    const portPart = port ? `:${port}` : '';
-    return `${protocol}//localhost${portPart}${path}`;
-  }
-
-  if (hostname.startsWith('admin.')) {
-    const domain = hostname.replace(/^admin\./, '');
-    const portPart = port ? `:${port}` : '';
-    return `${protocol}//${domain}${portPart}${path}`;
-  }
-
-  return path;
-};
+export const APP_ROUTES = {
+  ROOT: '/',
+  SIGN_IN: '/signin',
+  DASHBOARD: '/dashboard',
+  // Teacher-oriented paths
+  BATCHES: '/batches',
+  STUDENTS: '/students',
+  // Shared pedagogical paths
+  ATTENDANCE: '/attendance',
+  ASSESSMENTS: '/assessments',
+  FEEDBACK: '/feedback',
+  PROFILE: '/profile',
+  // Student-oriented paths
+  PROGRAM: '/program',
+  PROGRESS: '/progress',
+  DOCUMENTS: '/documents',
+} as const;
 
 /**
  * Admin Subdomain Routes
