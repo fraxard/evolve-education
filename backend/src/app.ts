@@ -15,6 +15,7 @@ import { auditLogsRouter } from './routes/auditLogs.js';
 import { dashboardRouter } from './routes/dashboard.js';
 import { studentRouter } from './routes/student.js';
 import { adminRouter } from './routes/admin.js';
+import { teacherRouter } from './routes/teacher.js';
 
 dotenv.config();
 
@@ -96,6 +97,7 @@ app.use('/api/audit-logs', auditLogsRouter);
 app.use('/api/admin/dashboard', dashboardRouter);
 app.use('/api/admin', adminRouter);
 app.use('/api/student', studentRouter);
+app.use('/api/teacher', teacherRouter);
 
 // 5. 404 Handler for undefined API routes
 app.use('/api/*', (req, res) => {

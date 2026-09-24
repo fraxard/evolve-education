@@ -26,7 +26,9 @@ export const APP_ROUTES = {
   DASHBOARD: '/dashboard',
   // Teacher-oriented paths
   BATCHES: '/batches',
+  BATCH_DETAIL: (id: string = ':batchId') => `/batches/${id}`,
   STUDENTS: '/students',
+  STUDENT_DETAIL: (id: string = ':studentId') => `/students/${id}`,
   // Shared pedagogical paths
   ATTENDANCE: '/attendance',
   ASSESSMENTS: '/assessments',

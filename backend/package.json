@@ -14,7 +14,8 @@
     "test:student-foundation": "tsx src/scripts/test-student-foundation.ts",
     "test:student-dashboard": "tsx src/scripts/test-student-dashboard.ts",
     "test:sprint1": "tsx src/scripts/test-sprint1.ts",
-    "test:phase2b0": "tsx src/scripts/test-phase2b0-boundaries.ts"
+    "test:phase2b0": "tsx src/scripts/test-phase2b0-boundaries.ts",
+    "test:phase2b1": "tsx src/scripts/test-phase2b1-teacher.ts"
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",

@@ -2,6 +2,10 @@ import React from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { APP_ROUTES } from '../../routes/paths';
 import { TeacherDashboardPage } from '../pages/teacher/TeacherDashboardPage';
+import { TeacherBatchesPage } from '../pages/teacher/TeacherBatchesPage';
+import { TeacherBatchDetailPage } from '../pages/teacher/TeacherBatchDetailPage';
+import { TeacherStudentsPage } from '../pages/teacher/TeacherStudentsPage';
+import { TeacherStudentDetailPage } from '../pages/teacher/TeacherStudentDetailPage';
 import { PlaceholderView } from '../components/PlaceholderView';
 import { AccessRestrictedView } from '../components/AccessRestrictedView';
 
@@ -9,28 +13,10 @@ export const TeacherRoutes: React.FC = () => {
   return (
     <Routes>
       <Route path="dashboard" element={<TeacherDashboardPage />} />
-      <Route
-        path="batches"
-        element={
-          <PlaceholderView
-            title="My Batches"
-            phase="Phase 2B.1"
-            description="Teacher batch overview, active schedules, and student rosters will be implemented in Phase 2B.1."
-            role="teacher"
-          />
-        }
-      />
-      <Route
-        path="students"
-        element={
-          <PlaceholderView
-            title="Student Roster & Profiles"
-            phase="Phase 2B.1"
-            description="Assigned student directories, contact details, and academic profiles will be implemented in Phase 2B.1."
-            role="teacher"
-          />
-        }
-      />
+      <Route path="batches" element={<TeacherBatchesPage />} />
+      <Route path="batches/:batchId" element={<TeacherBatchDetailPage />} />
+      <Route path="students" element={<TeacherStudentsPage />} />
+      <Route path="students/:studentId" element={<TeacherStudentDetailPage />} />
       <Route
         path="attendance"
         element={

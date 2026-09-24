@@ -9,7 +9,7 @@ export const batchesRouter = Router();
 batchesRouter.get(
   '/',
   requireAuth,
-  requireRole(['admin', 'teacher']),
+  requireRole('admin'),
   async (req: AuthenticatedRequest, res: Response): Promise<void> => {
     try {
       const programId = req.query.programId as string;

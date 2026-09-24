@@ -9,7 +9,7 @@ export const studentsRouter = Router();
 studentsRouter.get(
   '/',
   requireAuth,
-  requireRole(['admin', 'teacher']),
+  requireRole('admin'),
   async (req: AuthenticatedRequest, res: Response): Promise<void> => {
     try {
       const search = ((req.query.search as string) || '').trim();
@@ -92,7 +92,7 @@ studentsRouter.get(
 studentsRouter.get(
   '/:id',
   requireAuth,
-  requireRole(['admin', 'teacher']),
+  requireRole('admin'),
   async (req: AuthenticatedRequest, res: Response): Promise<void> => {
     try {
       const { id } = req.params;
@@ -115,18 +115,6 @@ studentsRouter.get(
       }
 
       const student = studentRes.rows[0];
-
-      // If teacher role, verify teacher is assigned to this student
-      if (req.currentUser?.role === 'teacher' && req.currentUser.teacherId) {
-        const assignedCheck = await query(
-          `SELECT id FROM enrollments WHERE student_id = $1 AND teacher_id = $2`,
-          [id, req.currentUser.teacherId]
-        );
-        if (assignedCheck.rows.length === 0) {
-          res.status(403).json({ error: 'Forbidden: You are not assigned to this student.' });
-          return;
-        }
-      }
 
       // Fetch active and past enrollments
       const enrollmentsRes = await query(
